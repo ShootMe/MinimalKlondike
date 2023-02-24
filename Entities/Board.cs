@@ -186,7 +186,7 @@ namespace Klondike.Entities {
             };
         }
         public SolveDetail Solve(int maxMoves = 250, int maxRounds = 20, int maxNodes = 10000000, bool terminateEarly = false) {
-            Heap<MoveIndex> open = new Heap<MoveIndex>((int)(maxNodes * 0.8));
+            Heap<MoveIndex> open = new Heap<MoveIndex>((int)(maxNodes));
             HashMap<State> closed = new HashMap<State>(FindPrime((int)(maxNodes * 1.1)));
 
             MoveNode[] nodeStorage = new MoveNode[maxNodes + 1];
@@ -243,7 +243,6 @@ namespace Klondike.Entities {
                 //Get any available moves to check
                 moves.Clear();
                 GetAvailableMoves(moves);
-
 
                 //Make available moves and add them to be evaulated
                 int canAdd = moves.Count;
@@ -517,8 +516,10 @@ namespace Klondike.Entities {
                     Card card = pileFrom.BottomNoCheck;
                     int foundationMinimum = 0;
                     byte cardFoundation = CanMoveToFoundation(card, ref foundationMinimum);
-                    moves.Add(new Move(lastMove.From, cardFoundation, 1, pileFromSize > 1 && pileFrom.UpSize == 1));
-                    return;
+                    if (cardFoundation != 255) {
+                        moves.Add(new Move(lastMove.From, cardFoundation, 1, pileFromSize > 1 && pileFrom.UpSize == 1));
+                        return;
+                    }
                 }
             }
 
@@ -530,10 +531,10 @@ namespace Klondike.Entities {
         private void SetFoundationMin() {
             int min1 = piles[Foundation1].Size;
             int min2 = piles[Foundation3].Size;
-            foundationMinimumBlack = (min1 <= min2 ? min1 : min2) + (int)CardRank.Two;
+            foundationMinimumBlack = (min1 <= min2 ? min1 : min2) + 1;
             min1 = piles[Foundation2].Size;
             min2 = piles[Foundation4].Size;
-            foundationMinimumRed = (min1 <= min2 ? min1 : min2) + (int)CardRank.Two;
+            foundationMinimumRed = (min1 <= min2 ? min1 : min2) + 1;
         }
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private bool CheckTableau(List<Move> moves, bool allMoves = false) {
@@ -637,7 +638,7 @@ namespace Klondike.Entities {
             for (byte i = FoundationStart; i <= FoundationEnd; ++i) {
                 Pile foundPile = piles[i];
                 int foundationSize = foundPile.Size;
-                int foundationMinimum = ((i - FoundationStart) & 1) == 0 ? foundationMinimumRed : foundationMinimumBlack;
+                int foundationMinimum = foundationMinimumBlack < foundationMinimumRed ? foundationMinimumBlack : foundationMinimumRed;
                 if (foundationSize == 0 || foundationSize <= foundationMinimum) { continue; }
 
                 Card foundCard = foundPile.BottomNoCheck;
@@ -808,11 +809,7 @@ namespace Klondike.Entities {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private byte CanMoveToFoundation(Card card, ref int foundationMinimum) {
             int pile = FoundationStart + (int)card.Suit;
-            if (card.IsRed != 0) {
-                foundationMinimum = foundationMinimumBlack;
-            } else {
-                foundationMinimum = foundationMinimumRed;
-            }
+            foundationMinimum = foundationMinimumBlack < foundationMinimumRed ? foundationMinimumBlack : foundationMinimumRed;
             return piles[pile].Size == (int)card.Rank ? (byte)pile : (byte)255;
         }
         public bool SetDeal(string cardSet) {
