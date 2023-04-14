@@ -10,6 +10,7 @@ namespace Klondike.Entities {
         public SolveResult Result;
         public int States;
         public TimeSpan Time;
+        public int Moves;
 
         public override string ToString() {
             return $"{Result} ({States})";
