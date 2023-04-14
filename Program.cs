@@ -20,7 +20,10 @@ DrawCount (Default=1)
 Initial Moves
 -M ""Moves To Play Initially""
 
-Example:
+Solve Seed 123 from GreenFelt:
+Klondike.exe 123
+
+Solve Given CardSet With Initial Moves:
 Klondike.exe -D 1 -M ""HE KE @@@@AD GD LJ @@AH @@AJ GJ @@@@AG @AB"" 081054022072134033082024052064053012061013042093084124092122062031083121113023043074051114091014103044131063041102101133011111071073034123104112021132032094");
                 return;
             }
@@ -45,14 +48,19 @@ Klondike.exe -D 1 -M ""HE KE @@@@AD GD LJ @@AH @@AJ GJ @@@@AG @AB"" 081054022072
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            SolveGame(cardSet, drawCount, moveSet, true);
+            if (cardSet.Length < 11) {
+                uint.TryParse(cardSet, out uint seed);
+                SolveGame(seed, drawCount, moveSet, true);
+            } else {
+                SolveGame(cardSet, drawCount, moveSet, true);
+            }
 
             sw.Stop();
             Console.WriteLine($"Done {sw.Elapsed}");
         }
-        private static SolveDetail SolveGame(int deal, int drawCount = 1, string movesMade = null, bool allowFoundationMoves = false) {
+        private static SolveDetail SolveGame(uint deal, int drawCount = 1, string movesMade = null, bool allowFoundationMoves = false) {
             Board board = new Board(drawCount);
-            board.Shuffle(deal);
+            board.ShuffleGreenFelt(deal);
             if (!string.IsNullOrEmpty(movesMade)) {
                 board.PlayMoves(movesMade);
             }
