@@ -20,6 +20,9 @@ DrawCount (Default=1)
 Initial Moves
 -M ""Moves To Play Initially""
 
+Max States (Default=50,000,000) (About 1GB RAM Per 22 Million)
+-S #
+
 Solve Seed 123 from GreenFelt:
 Klondike.exe 123
 
@@ -31,12 +34,19 @@ Klondike.exe -D 1 -M ""HE KE @@@@AD GD LJ @@AH @@AJ GJ @@@@AG @AB"" 081054022072
             string cardSet = args[^1];
             int drawCount = 1;
             string moveSet = null;
+            int maxStates = 50_000_000;
 
             for (int i = 0; i < args.Length - 1; i++) {
                 if (args[i] == "-D" && i + 1 < args.Length) {
                     if (!int.TryParse(args[i + 1], out drawCount)) {
                         Console.WriteLine($"Invalid DrawCount argument {args[i + 1]}. Defaulting to 1.");
                         drawCount = 1;
+                    }
+                    i++;
+                } else if (args[i] == "-S" && i + 1 < args.Length) {
+                    if (!int.TryParse(args[i + 1], out maxStates)) {
+                        Console.WriteLine($"Invalid MaxStates argument {args[i + 1]}. Defaulting to 50,000,000.");
+                        maxStates = 50_000_000;
                     }
                     i++;
                 } else if (args[i] == "-M" && i + 1 < args.Length) {
@@ -50,40 +60,40 @@ Klondike.exe -D 1 -M ""HE KE @@@@AD GD LJ @@AH @@AJ GJ @@@@AG @AB"" 081054022072
 
             if (cardSet.Length < 11) {
                 uint.TryParse(cardSet, out uint seed);
-                SolveGame(seed, drawCount, moveSet, true);
+                SolveGame(seed, drawCount, moveSet, maxStates);
             } else {
-                SolveGame(cardSet, drawCount, moveSet, true);
+                SolveGame(cardSet, drawCount, moveSet, maxStates);
             }
 
             sw.Stop();
             Console.WriteLine($"Done {sw.Elapsed}");
         }
-        private static SolveDetail SolveGame(uint deal, int drawCount = 1, string movesMade = null, bool allowFoundationMoves = false) {
+        private static SolveDetail SolveGame(uint deal, int drawCount = 1, string movesMade = null, int maxStates = 50_000_000) {
             Board board = new Board(drawCount);
             board.ShuffleGreenFelt(deal);
             if (!string.IsNullOrEmpty(movesMade)) {
                 board.PlayMoves(movesMade);
             }
-            board.AllowFoundationToTableau = allowFoundationMoves;
+            board.AllowFoundationToTableau = true;
 
-            return SolveGame(board);
+            return SolveGame(board, maxStates);
         }
-        private static SolveDetail SolveGame(string deal, int drawCount = 1, string movesMade = null, bool allowFoundationMoves = false) {
+        private static SolveDetail SolveGame(string deal, int drawCount = 1, string movesMade = null, int maxStates = 50_000_000) {
             Board board = new Board(drawCount);
             board.SetDeal(deal);
             if (!string.IsNullOrEmpty(movesMade)) {
                 board.PlayMoves(movesMade);
             }
-            board.AllowFoundationToTableau = allowFoundationMoves;
+            board.AllowFoundationToTableau = true;
 
-            return SolveGame(board);
+            return SolveGame(board, maxStates);
         }
-        private static SolveDetail SolveGame(Board board) {
+        private static SolveDetail SolveGame(Board board, int maxStates) {
             Console.WriteLine($"Deal: {board.GetDeal()}");
             Console.WriteLine();
             Console.WriteLine(board);
 
-            SolveDetail result = board.Solve(250, 15, 50_000_000);
+            SolveDetail result = board.Solve(250, 15, maxStates);
 
             Console.WriteLine($"Moves: {board.MovesMadeOutput}");
             Console.WriteLine();
