@@ -21,7 +21,6 @@ namespace Klondike.Entities {
         internal const int TableauStart = FoundationEnd + 1;
         internal const int TableauEnd = TableauStart + TableauSize - 1;
         internal const int StockPile = TableauEnd + 1;
-        private static readonly int[] BitsPerPile = { 21, 21, 21, 20, 17, 16, 15 };
 
         public bool AllowFoundationToTableau { get; set; }
         private readonly Card[] state, initialState, deck;
@@ -287,7 +286,7 @@ namespace Klondike.Entities {
                             }
 
                             if (!Solved) {
-                                short heuristic = (short)((newEstimate.Total << 2) + movesAdded + (DeckSize - foundationCount + (roundCount << 1)));
+                                short heuristic = (short)((newEstimate.Total << 1) + movesAdded + (DeckSize - foundationCount + (roundCount << 1)));
                                 open.Enqueue(new MoveIndex() { Index = nodeCount++, Priority = heuristic, Estimate = newEstimate });
                                 if (nodeCount >= maxNodes) { break; }
                             }
@@ -546,6 +545,13 @@ namespace Klondike.Entities {
         }
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private bool CheckTableau(List<Move> moves, bool allMoves = false) {
+            int emptyPiles = 0;
+            for (byte i = TableauStart; i <= TableauEnd; ++i) {
+                Pile pileFrom = piles[i];
+
+                int pileFromSize = pileFrom.Size;
+                if (pileFromSize == 0) { emptyPiles++; }
+            }
             //Check tableau to foundation, Check tableau to tableau
             for (byte i = TableauStart; i <= TableauEnd; ++i) {
                 Pile pileFrom = piles[i];
@@ -591,7 +597,7 @@ namespace Klondike.Entities {
                     }
 
                     int pileFromMoved = toBottom.Rank - fromBottom.Rank;
-                    if (allMoves || pileFromMoved == pileFromLength || CanMoveToFoundation(pileFrom.UpNoCheck(pileFromMoved), ref foundationMinimum) != 255) {
+                    if (allMoves || (pileFromMoved == pileFromLength && (pileFromMoved != pileFromSize || emptyPiles == 0)) || (pileFromMoved < pileFromLength && CanMoveToFoundation(pileFrom.UpNoCheck(pileFromMoved), ref foundationMinimum) != 255)) {
                         //we are moving all face up cards
                         //or look to see if we are covering a card that can be moved to the foundation
                         moves.Add(new Move(i, j, (byte)pileFromMoved, pileFromSize > pileFromMoved && pileFromMoved == pileFromLength));
@@ -726,9 +732,7 @@ namespace Klondike.Entities {
                 do {
                     Pile one = piles[order[search - 1]];
                     Pile two = piles[order[search]];
-                    if (one.UpSize > two.UpSize || (one.UpSize == two.UpSize && one.Top.ID2 > two.Top.ID2)) {
-                        break;
-                    }
+                    if (one.Top.ID2 > two.Top.ID2) { break; }
 
                     byte temp = order[--search];
                     order[search] = order[search + 1];
@@ -740,10 +744,9 @@ namespace Klondike.Entities {
             int z = 0;
             key[z++] = (byte)((piles[Foundation1].Size << 4) | piles[Foundation3].Size);
             key[z++] = (byte)((piles[Foundation2].Size << 4) | piles[Foundation4].Size);
-            key[z++] = (byte)piles[WastePile].Size;
 
-            int bits = 2;
-            int mask = 0;
+            int bits = 5;
+            int mask = (byte)piles[WastePile].Size;
             for (byte i = 0; i < TableauSize; ++i) {
                 Pile pile = piles[order[i]];
                 int upSize = pile.UpSize;
@@ -763,18 +766,14 @@ namespace Klondike.Entities {
                     mask |= pile.UpNoCheck(j).Order;
                 }
 
-                int toAdd = BitsPerPile[i] - added;
-                if (toAdd > 0) {
-                    bits += toAdd;
-                    mask <<= toAdd;
-                }
-
                 do {
                     bits -= 8;
                     key[z++] = (byte)(mask >> bits);
                 } while (bits >= 8);
             }
-
+            if (bits > 0) {
+                key[z] = (byte)(mask << (8 - bits));
+            }
             return key;
         }
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -819,7 +818,7 @@ namespace Klondike.Entities {
             return piles[pile].Size == (int)card.Rank ? (byte)pile : (byte)255;
         }
         public bool SetDeal(string cardSet) {
-            if (cardSet.Length < deck.Length * 3) { return false; }
+            if (cardSet.Length < deck.Length * 3 - 1) { return false; }
 
             int decks = deck.Length / 52;
             int[] used = new int[52];

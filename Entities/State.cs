@@ -3,9 +3,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 namespace Klondike.Entities {
-    [StructLayout(LayoutKind.Sequential, Size = 22, Pack = 2)]
+    [StructLayout(LayoutKind.Sequential, Size = 18, Pack = 2)]
     public unsafe struct State : IComparable<State>, IEquatable<State> {
-        private const int KeyLength = 20;
+        private const int KeyLength = 16;
         public fixed byte Key[KeyLength];
         public Estimate Moves;
 

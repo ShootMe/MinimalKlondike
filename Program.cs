@@ -1,6 +1,7 @@
 ﻿using Klondike.Entities;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 namespace Klondike {
     public class Program {
         public static void Main(string[] args) {
@@ -31,7 +32,7 @@ Klondike.exe -D 1 -M ""HE KE @@@@AD GD LJ @@AH @@AJ GJ @@@@AG @AB"" 081054022072
                 return;
             }
 
-            string cardSet = args[^1];
+            string cardSet = args[^1].Replace("\"", "");
             int drawCount = 1;
             string moveSet = null;
             int maxStates = 50_000_000;
@@ -44,7 +45,7 @@ Klondike.exe -D 1 -M ""HE KE @@@@AD GD LJ @@AH @@AJ GJ @@@@AG @AB"" 081054022072
                     }
                     i++;
                 } else if (args[i] == "-S" && i + 1 < args.Length) {
-                    if (!int.TryParse(args[i + 1], out maxStates)) {
+                    if (!int.TryParse(args[i + 1], NumberStyles.AllowThousands, null, out maxStates)) {
                         Console.WriteLine($"Invalid MaxStates argument {args[i + 1]}. Defaulting to 50,000,000.");
                         maxStates = 50_000_000;
                     }
@@ -97,7 +98,7 @@ Klondike.exe -D 1 -M ""HE KE @@@@AD GD LJ @@AH @@AJ GJ @@@@AG @AB"" 081054022072
 
             Console.WriteLine($"Moves: {board.MovesMadeOutput}");
             Console.WriteLine();
-            Console.WriteLine($"(Deal State: {result.Result} Foundation: {board.CardsInFoundation} Moves: {board.MovesMade} Rounds: {board.TimesThroughDeck} Took: {result.Time})");
+            Console.WriteLine($"(Deal Result: {result.Result} Foundation: {board.CardsInFoundation} Moves: {board.MovesMade} Rounds: {board.TimesThroughDeck} States: {result.States} Took: {result.Time})");
 
             return result;
         }
